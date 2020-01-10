@@ -60,9 +60,10 @@ print("[INFO] YOLO took {:.6f} seconds".format(end - start))
 
 # initialize our lists of detected bounding boxes, confidences, and
 # class IDs, respectively
-boxes = []
-confidences = []
-classIDs = []
+boxes = [0, 0]
+boxes_yolo = [0, 0]
+confidences = [0, 0]
+classIDs = [0, 1]
 
 # loop over each of the layer outputs
 for output in layerOutputs:
@@ -81,6 +82,21 @@ for output in layerOutputs:
 			# size of the image, keeping in mind that YOLO actually
 			# returns the center (x, y)-coordinates of the bounding
 			# box followed by the boxes' width and height
+			if classID == 0:
+				# ball
+				if confidence > confidences[0]:
+					confidences[0] = confidence
+					box_index = 0
+				else:
+					continue
+			else:
+				# basket
+				if confidence > confidences[1]:
+					confidences[1] = confidence
+					box_index = 1
+				else:
+					continue
+
 			box = detection[0:4] * np.array([W, H, W, H])
 			(centerX, centerY, width, height) = box.astype("int")
 
@@ -89,21 +105,19 @@ for output in layerOutputs:
 			x = int(centerX - (width / 2))
 			y = int(centerY - (height / 2))
 
-			# update our list of bounding box coordinates, confidences,
-			# and class IDs
-			boxes.append([x, y, int(width), int(height)])
-			confidences.append(float(confidence))
-			classIDs.append(classID)
+			# update best match box for the particular class
+			boxes_yolo[box_index] = [classID, detection[0:4]]
+			boxes[box_index] = [x, y, int(width), int(height)]
 
 # apply non-maxima suppression to suppress weak, overlapping bounding
 # boxes
-idxs = cv2.dnn.NMSBoxes(boxes, confidences, args["confidence"],
-	args["threshold"])
-
+# idxs = cv2.dnn.NMSBoxes(boxes, confidences, args["confidence"],
+# 	args["threshold"])
+idxs = [1]
 # ensure at least one detection exists
 if len(idxs) > 0:
 	# loop over the indexes we are keeping
-	for i in idxs.flatten():
+	for i in range(2):
 		# extract the bounding box coordinates
 		(x, y) = (boxes[i][0], boxes[i][1])
 		(w, h) = (boxes[i][2], boxes[i][3])
@@ -115,6 +129,12 @@ if len(idxs) > 0:
 		cv2.putText(image, text, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX,
 			0.5, color, 2)
 
+# create yolo annotation file.txt
+filename = args['image'].split(".")[0] + "txt"
+with open(filename, 'w') as f:
+	for box in boxes_yolo:
+		if type(box) != int:
+			f.write("%d %.6f %.6f %.6f %.6f\n" % (box[0], box[1][0], box[1][1], box[1][2], box[1][3]))
 # show the output image
-cv2.imshow("Image", image)
-cv2.waitKey(0)
+#cv2.imshow("Image", image)
+#cv2.waitKey(0)
