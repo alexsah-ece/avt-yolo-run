@@ -119,22 +119,26 @@ if len(idxs) > 0:
 	# loop over the indexes we are keeping
 	for i in range(2):
 		# extract the bounding box coordinates
-		(x, y) = (boxes[i][0], boxes[i][1])
-		(w, h) = (boxes[i][2], boxes[i][3])
+		try:
+			(x, y) = (boxes[i][0], boxes[i][1])
+			(w, h) = (boxes[i][2], boxes[i][3])
 
-		# draw a bounding box rectangle and label on the image
-		color = [int(c) for c in COLORS[classIDs[i]]]
-		cv2.rectangle(image, (x, y), (x + w, y + h), color, 2)
-		text = "{}: {:.4f}".format(LABELS[classIDs[i]], confidences[i])
-		cv2.putText(image, text, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX,
-			0.5, color, 2)
+			# draw a bounding box rectangle and label on the image
+			color = [int(c) for c in COLORS[classIDs[i]]]
+			cv2.rectangle(image, (x, y), (x + w, y + h), color, 2)
+			text = "{}: {:.4f}".format(LABELS[classIDs[i]], confidences[i])
+			cv2.putText(image, text, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX,
+				0.5, color, 2)
+		except TypeError:
+			pass
 
 # create yolo annotation file.txt
-filename = args['image'].split(".")[0] + "txt"
+filename = args['image'].split(".")[0] + ".txt"
+print(filename)
 with open(filename, 'w') as f:
-	for box in boxes_yolo:
+	for id, box in enumerate(boxes_yolo):
 		if type(box) != int:
-			f.write("%d %.6f %.6f %.6f %.6f\n" % (box[0], box[1][0], box[1][1], box[1][2], box[1][3]))
+			f.write("%d %.2f %.6f %.6f %.6f %.6f\n" % (box[0], confidences[idx], box[1][0], box[1][1], box[1][2], box[1][3]))
 # show the output image
 #cv2.imshow("Image", image)
 #cv2.waitKey(0)
