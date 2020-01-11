@@ -89,9 +89,9 @@ while True:
 
 	# initialize our lists of detected bounding boxes, confidences,
 	# and class IDs, respectively
-	boxes = []
-	confidences = []
-	classIDs = []
+	boxes = [0, 0]
+	confidences = [0, 0]
+	classIDs = [0, 1]
 
 	# loop over each of the layer outputs
 	for output in layerOutputs:
@@ -111,40 +111,54 @@ while True:
 				# actually returns the center (x, y)-coordinates of
 				# the bounding box followed by the boxes' width and
 				# height
+				if classID == 0:
+					# ball
+					if confidence > confidences[0]:
+						confidences[0] = confidence
+						box_index = 0
+					else:
+						continue
+				else:
+					# basket
+					if confidence > confidences[1]:
+						confidences[1] = confidence
+						box_index = 1
+					else:
+						continue
+
 				box = detection[0:4] * np.array([W, H, W, H])
 				(centerX, centerY, width, height) = box.astype("int")
 
-				# use the center (x, y)-coordinates to derive the top
-				# and and left corner of the bounding box
+				# use the center (x, y)-coordinates to derive the top and
+				# and left corner of the bounding box
 				x = int(centerX - (width / 2))
 				y = int(centerY - (height / 2))
 
-				# update our list of bounding box coordinates,
-				# confidences, and class IDs
-				boxes.append([x, y, int(width), int(height)])
-				confidences.append(float(confidence))
-				classIDs.append(classID)
-
+				# update best match box for the particular class
+				boxes[box_index] = [x, y, int(width), int(height)]
 	# apply non-maxima suppression to suppress weak, overlapping
 	# bounding boxes
-	idxs = cv2.dnn.NMSBoxes(boxes, confidences, args["confidence"],
-		args["threshold"])
-
+	# idxs = cv2.dnn.NMSBoxes(boxes, confidences, args["confidence"],
+	# 	args["threshold"])
+	idxs = [1]
 	# ensure at least one detection exists
 	if len(idxs) > 0:
 		# loop over the indexes we are keeping
-		for i in idxs.flatten():
-			# extract the bounding box coordinates
-			(x, y) = (boxes[i][0], boxes[i][1])
-			(w, h) = (boxes[i][2], boxes[i][3])
+		for i in range(2):
+			try:
+				# extract the bounding box coordinates
+				(x, y) = (boxes[i][0], boxes[i][1])
+				(w, h) = (boxes[i][2], boxes[i][3])
 
-			# draw a bounding box rectangle and label on the frame
-			color = [int(c) for c in COLORS[classIDs[i]]]
-			cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
-			text = "{}: {:.4f}".format(LABELS[classIDs[i]],
-				confidences[i])
-			cv2.putText(frame, text, (x, y - 5),
-				cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+				# draw a bounding box rectangle and label on the frame
+				color = [int(c) for c in COLORS[classIDs[i]]]
+				cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
+				text = "{}: {:.4f}".format(LABELS[classIDs[i]],
+					confidences[i])
+				cv2.putText(frame, text, (x, y - 5),
+					cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+			except TypeError:
+				print("No object class %d found" % classIDs[i])
 
 	# check if the video writer is None
 	if writer is None:
