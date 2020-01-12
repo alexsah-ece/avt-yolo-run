@@ -136,9 +136,9 @@ if len(idxs) > 0:
 filename = args['image'].split(".")[0] + ".txt"
 print(filename)
 with open(filename, 'w') as f:
-	for id, box in enumerate(boxes_yolo):
+	for idx, box in enumerate(boxes_yolo):
 		if type(box) != int:
-			f.write("%d %.2f %.6f %.6f %.6f %.6f\n" % (box[0], confidences[idx], box[1][0], box[1][1], box[1][2], box[1][3]))
+			f.write("%d %.6f %.6f %.6f %.6f\n" % (box[0], box[1][0], box[1][1], box[1][2], box[1][3]))
 # show the output image
 #cv2.imshow("Image", image)
 #cv2.waitKey(0)
